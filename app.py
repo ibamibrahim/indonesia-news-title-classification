@@ -59,16 +59,19 @@ def calculate_bmi(weight, height):
 @app.route('/predictNewsTitle', methods=['GET'])
 def predict_news_title():
     data = request.get_json()
-    title = data['title']
+    title_args = request.args.get('q')
+    print(data)
+    title_json = data['title'] if data is not None else None
+    title_raw = title_args if title_args is not None else title_json
     sw_remover = StopWordRemoverFactory().create_stop_word_remover()
     stemmer = StemmerFactory().create_stemmer()
     vectorizer = pickle.load(open("vectorizer.pickle", "rb"))
     model = pickle.load(open("final_model.pickle", "rb"))
-    title = preprocess(title, sw_remover, stemmer)
+    title = preprocess(title_raw, sw_remover, stemmer)
     title = vectorizer.transform([title])
     predicted_label = model.predict(title)[0]
     result = {
-        'title': data['title'],
+        'title': title_raw,
         'predicted_label': predicted_label 
     }
     return make_response(jsonify(result), 200)
