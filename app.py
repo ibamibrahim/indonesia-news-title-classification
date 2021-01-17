@@ -34,44 +34,21 @@ def preprocess(title, sw_remover, stemmer):
 
 @app.route('/')
 def index():
-    return "Hello World?"
-
-
-@app.route('/predict', methods=['GET'])
-def predict():
-    data = request.get_json()
-    gender = 1 if data['gender'] == 'Male' else 0
-    smoker = 1 if data['smoker'] else 0
-    diabetic = 1 if data['diabetic'] else 0
-    model_file = os.path.join(app.config['APP_PATH'], 'model.pkl')
-    bmi = calculate_bmi(data['weight'], data['height'])
-    with open(model_file, 'rb') as f:
-        model = pickle.load(f)
-        X_predict = [[gender, data['age'], smoker, data['cig_count'], diabetic, data['bp'], bmi]]
-        value = model.predict(X_predict)
-        result = {'status':'done', 'value':int(value[0])}
-    data['result'] = result
-    return make_response(jsonify(data), 200)
-
-def calculate_bmi(weight, height):
-    return round(float(weight) / (float(height / 100) * float(height / 100)), 2)
+    return "Hello World!"
 
 @app.route('/predictNewsTitle', methods=['GET'])
 def predict_news_title():
-    data = request.get_json()
     title_args = request.args.get('q')
-    print(data)
-    title_json = data['title'] if data is not None else None
-    title_raw = title_args if title_args is not None else title_json
     sw_remover = StopWordRemoverFactory().create_stop_word_remover()
     stemmer = StemmerFactory().create_stemmer()
     vectorizer = pickle.load(open("vectorizer.pickle", "rb"))
     model = pickle.load(open("final_model.pickle", "rb"))
-    title = preprocess(title_raw, sw_remover, stemmer)
-    title = vectorizer.transform([title])
+    title_preprocessed = preprocess(title_args, sw_remover, stemmer)
+    title = vectorizer.transform([title_preprocessed])
     predicted_label = model.predict(title)[0]
     result = {
-        'title': title_raw,
+        'title': title_args,
+        'title_cleaned': title_preprocessed,
         'predicted_label': predicted_label 
     }
     return make_response(jsonify(result), 200)
